@@ -19,6 +19,35 @@ tasks {
     }
 }
 
+static def getLatestTag() {
+    try {
+        'git fetch --tags'.execute().waitFor()
+
+        def commit = 'git rev-parse --short HEAD'.execute().text.trim()
+
+        if (commit.isEmpty()) return "unknown"
+
+        def tagProcess = 'git describe --tags --abbrev=0'.execute()
+        tagProcess.waitFor()
+        def rawTag = tagProcess.text.trim()
+
+        def hasTag = rawTag.contains('v')
+
+        def branch = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
+
+        if (hasTag) {
+            def tag = rawTag - 'v'
+            return branch == "release" ? tag : "$tag+$commit"
+        } else {
+            return "1.0.0+$commit"
+        }
+    } catch (Exception ignored) {
+        return "unknown"
+    }
+}
+
+version = getLatestTag()
+
 allprojects {
     repositories {
         mavenCentral()

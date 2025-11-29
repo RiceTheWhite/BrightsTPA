@@ -1,0 +1,84 @@
+[01:20:44] [ServerMain/INFO]: [bootstrap] Running Java 21 (OpenJDK 64-Bit Server VM 21.0.9+10; Arch Linux null) on Linux 6.17.9-arch1-1 (amd64)
+[01:20:44] [ServerMain/INFO]: [bootstrap] Loading Paper 1.21.8-60-main@29c8822 (2025-09-06T21:49:13Z) for Minecraft 1.21.8
+[01:20:44] [ServerMain/INFO]: [PluginInitializerManager] Initializing plugins...
+[01:20:44] [ServerMain/INFO]: [PluginInitializerManager] Initialized 1 plugin
+[01:20:44] [ServerMain/INFO]: [PluginInitializerManager] Bukkit plugins (1):
+ - prj1 (0.0.0)
+[01:20:47] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[01:20:48] [ServerMain/INFO]: Loaded 1407 recipes
+[01:20:48] [ServerMain/INFO]: Loaded 1520 advancements
+[01:20:48] [ServerMain/INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Initialising converters for DataConverter...
+[01:20:48] [ServerMain/INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Finished initialising converters for DataConverter in 251.9ms
+[01:20:48] [Server thread/INFO]: Starting minecraft server version 1.21.8
+[01:20:48] [Server thread/INFO]: Loading properties
+[01:20:48] [Server thread/INFO]: This server is running Paper version 1.21.8-60-main@29c8822 (2025-09-06T21:49:13Z) (Implementing API version 1.21.8-R0.1-SNAPSHOT)
+[01:20:48] [Server thread/INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
+[01:20:48] [Server thread/INFO]: Server Ping Player Sample Count: 12
+[01:20:48] [Server thread/INFO]: Using 4 threads for Netty based IO
+[01:20:49] [Server thread/ERROR]: [Configurations] Loading a newer configuration than is supported (31 > 30)! You may have to backup & delete your global config file to start the server.
+[01:20:49] [Server thread/INFO]: [MoonriseCommon] Paper is using 4 worker threads, 1 I/O threads
+[01:20:49] [Server thread/INFO]: [ChunkTaskScheduler] Chunk system is using population gen parallelism: true
+[01:20:49] [Server thread/INFO]: Default game type: SURVIVAL
+[01:20:49] [Server thread/INFO]: Generating keypair
+[01:20:49] [Server thread/INFO]: Starting Minecraft server on *:25565
+[01:20:49] [Server thread/INFO]: Using epoll channel type
+[01:20:49] [Server thread/INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
+[01:20:49] [Server thread/INFO]: Paper: Using OpenSSL 3.x.x (Linux x86_64) cipher from Velocity.
+[01:20:49] [Server thread/INFO]: [prj1] Loading server plugin prj1 v0.0.0
+[01:20:49] [Server thread/INFO]: Server permissions file permissions.yml is empty, ignoring it
+[01:20:49] [Server thread/INFO]: Preparing level "world"
+[01:20:50] [Server thread/INFO]: Preparing start region for dimension minecraft:overworld
+[01:20:50] [Server thread/INFO]: Preparing spawn area: 0%
+[01:20:50] [Server thread/INFO]: Preparing spawn area: 2%
+[01:20:50] [Server thread/INFO]: Time elapsed: 631 ms
+[01:20:50] [Server thread/INFO]: Preparing start region for dimension minecraft:the_nether
+[01:20:50] [Server thread/INFO]: Preparing spawn area: 0%
+[01:20:50] [Server thread/INFO]: Time elapsed: 101 ms
+[01:20:50] [Server thread/INFO]: Preparing start region for dimension minecraft:the_end
+[01:20:50] [Server thread/INFO]: Preparing spawn area: 0%
+[01:20:50] [Server thread/INFO]: Time elapsed: 48 ms
+[01:20:51] [Server thread/INFO]: [prj1] Enabling prj1 v0.0.0
+[01:20:51] [Server thread/INFO]: [prj1] Plugin Loaded!
+[01:20:51] [Server thread/INFO]: [spark] Starting background profiler...
+[01:20:51] [Server thread/INFO]: Done preparing level "world" (1.340s)
+[01:20:51] [Server thread/INFO]: Running delayed init tasks
+[01:20:51] [Server thread/INFO]: Done (7.706s)! For help, type "help"
+[01:20:59] [User Authenticator #0/INFO]: UUID of player BreightF0r3v3r is ee32dc2a-de52-4bc1-b082-2bed74255436
+[01:20:59] [Server thread/INFO]: BreightF0r3v3r joined the game
+[01:20:59] [Server thread/INFO]: BreightF0r3v3r[/127.0.0.1:44618] logged in with entity id 67 at ([world]12.894681421965533, 72.0, -2.2022954875966487)
+[01:21:30] [Server thread/INFO]: BreightF0r3v3r lost connection: Disconnected
+[01:21:30] [Server thread/INFO]: BreightF0r3v3r left the game
+[01:21:54] [Server thread/INFO]: Stopping server
+[01:21:54] [Server thread/INFO]: [prj1] Disabling prj1 v0.0.0
+[01:21:54] [Server thread/INFO]: [prj1] Plugin Unloaded!
+[01:21:54] [Server thread/INFO]: Saving players
+[01:21:54] [Server thread/INFO]: Saving worlds
+[01:21:54] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[01:21:54] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world'
+[01:21:54] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world'
+[01:21:54] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Saved 786 block chunks, 725 entity chunks, 0 poi chunks in world 'world' in 0.47s
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world'
+[01:21:55] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_nether]'/minecraft:the_nether
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world_nether'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world_nether'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world_nether'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Saved 49 block chunks, 49 entity chunks, 0 poi chunks in world 'world_nether' in 0.02s
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world_nether'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world_nether'
+[01:21:55] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_the_end]'/minecraft:the_end
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world_the_end'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world_the_end'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world_the_end'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Saved 49 block chunks, 49 entity chunks, 0 poi chunks in world 'world_the_end' in 0.02s
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world_the_end'
+[01:21:55] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world_the_end'
+[01:21:55] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[01:21:55] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[01:21:55] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[01:21:55] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
+[01:21:55] [Server thread/INFO]: Waiting for all RegionFile I/O tasks to complete...
+[01:21:55] [Server thread/INFO]: All RegionFile I/O tasks to complete
+[01:21:55] [Server thread/INFO]: [MoonriseCommon] Awaiting termination of worker pool for up to 60s...
+[01:21:55] [Server thread/INFO]: [MoonriseCommon] Awaiting termination of I/O pool for up to 60s...

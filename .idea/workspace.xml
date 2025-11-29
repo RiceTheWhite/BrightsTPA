@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5d396827-4912-498a-bb93-d7a1d22e74ed" name="Changes" comment="" />
+    <list default="true" id="5d396827-4912-498a-bb93-d7a1d22e74ed" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/gradle.properties" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -71,34 +74,34 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
-    &quot;Gradle./home/brightforever/Desktop/java_projects/project_1/project_1 [wrapper].executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.Build prj1.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.Build project_1.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.prj1 [:runServer].executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.prj1 [build].executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.prj1 [runServer].executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.prj1.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.project_1 [build].executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.project_1 [jar].executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.project_1 [processResources].executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHELLCHECK.PATH&quot;: &quot;/home/brightforever/.local/share/JetBrains/IdeaIC2025.2/Shell Script/shellcheck&quot;,
-    &quot;deletionFromPopupRequiresConfirmation&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/brightforever/Desktop/java_projects/Skript-feature-folia&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settingsdialog.project.gradle&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "Gradle./home/brightforever/Desktop/java_projects/project_1/project_1 [wrapper].executor": "Run",
+    "Gradle.Build prj1.executor": "Run",
+    "Gradle.Build project_1.executor": "Run",
+    "Gradle.prj1 [:runServer].executor": "Run",
+    "Gradle.prj1 [build].executor": "Run",
+    "Gradle.prj1 [runServer].executor": "Run",
+    "Gradle.prj1.executor": "Run",
+    "Gradle.project_1 [build].executor": "Run",
+    "Gradle.project_1 [jar].executor": "Run",
+    "Gradle.project_1 [processResources].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHELLCHECK.PATH": "/home/brightforever/.local/share/JetBrains/IdeaIC2025.2/Shell Script/shellcheck",
+    "deletionFromPopupRequiresConfirmation": "false",
+    "git-widget-placeholder": "release",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/home/brightforever/Desktop/java_projects/Skript-feature-folia",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "reference.settingsdialog.project.gradle"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Gradle.prj1 [build]">
     <configuration name="prj1 [:runServer]" type="GradleRunConfiguration" factoryName="Gradle" nameIsGenerated="true">
       <ExternalSystemSettings>

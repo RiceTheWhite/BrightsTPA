@@ -1,14 +1,12 @@
-package me.bright.prj1;
+package me.bright.brights_tpa;
 
 import org.bukkit.plugin.java.JavaPlugin;
-import me.bright.prj1.playerListeners.*;
 
-public final class prj1 extends JavaPlugin {
+public final class brights_tpa extends JavaPlugin {
 
     @Override
     public void onEnable() {
         getLogger().info("Plugin Loaded!");
-        getServer().getPluginManager().registerEvents(new playerDeathListener(), this);
     }
 
     @Override

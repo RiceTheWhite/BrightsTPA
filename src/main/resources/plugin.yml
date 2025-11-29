@@ -1,5 +1,0 @@
-name: ${name}
-version: ${version}
-main: ${group}.${name}.${name}
-api-version: ${apiVersion}
-author: BrightForever

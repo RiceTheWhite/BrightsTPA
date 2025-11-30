@@ -1,0 +1,4 @@
+request-timeout: 30
+tp-cooldown: 30
+tp-delay: 5
+cancel-on-move: true

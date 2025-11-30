@@ -4,3 +4,33 @@ api-version: ${apiVersion}
 name: ${name}
 version: ${version}
 author: ${author}
+
+commands:
+  brightstpa:
+    description: Reload the config
+  tpa:
+    description: TPA to a player
+  tpahere:
+    description: TPA a player to you
+  tpaccept:
+    description: Accept a TPA request
+    aliases: [tpyes]
+  tpdeny:
+    description: Deny a TPA request
+    aliases: [tpno]
+
+permissions:
+  brightstpa.reload:
+    description: "Allows the use of the /brightstpa reload command"
+  brightstpa.deny:
+    description: "Allows the use of the /tpdeny command"
+    default: true
+  brightstpa.accept:
+    description: "Allows the use of the /tpaccept command"
+    default: true
+  brightstpa.tpa:
+    description: "Allows the use of the /tpa command"
+    default: true
+  brightstpa.tpahere:
+    description: "Allows the use of the /tpa command"
+    default: true

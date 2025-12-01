@@ -139,7 +139,7 @@ public record HandleExecutor(BrightsTPA plugin) {
     public boolean removeRequest(@NotNull Map<UUID, UUID> map, @NotNull Player requestPlayer, Player receivePlayer, String type) {
         if (map.containsKey(requestPlayer.getUniqueId()) && map.get(requestPlayer.getUniqueId()).equals(receivePlayer.getUniqueId())) {
             map.remove(requestPlayer.getUniqueId());
-            send(requestPlayer, "&6Your %s request to &6%s &cwas denied!", type, receivePlayer);
+            send(requestPlayer, "&6Your %s request to &c%s &6was denied!", type, receivePlayer.getName());
             send(receivePlayer, "&6Denied &c%s&6's %s request.", requestPlayer.getName(), type);
             return true;
         }

@@ -105,10 +105,8 @@ public record HandleExecutor(BrightsTPA plugin) {
         for (UUID senderUUID : toRemove) {
             cancelTimeout(senderUUID);
             map.remove(senderUUID);
-            Player sender = Bukkit.getPlayer(senderUUID);
-            if (sender != null) {
-                send(sender, "&6Your %s request was denied!", type);
-            }
+            Player receivePlayer = Bukkit.getPlayer(senderUUID);
+            if (receivePlayer != null) send(receivePlayer, "&6Your %s request to &c%s &6was denied!", type, requestPlayer.getName());
         }
     }
 
@@ -127,14 +125,14 @@ public record HandleExecutor(BrightsTPA plugin) {
         foundRequest |= removeRequest(tpahereMap, receivePlayer, requestPlayer, "TPAHERE");
 
         if (!foundRequest) {
-            send(requestPlayer, "&6You don't have any pending requests from &c%s!", receivePlayer.getName());
+            send(requestPlayer, "&6You don't have any pending requests from &c%s&6!", receivePlayer.getName());
         }
     }
 
     public boolean removeRequest(Map<UUID, UUID> map, Player requestPlayer, Player receivePlayer, String type) {
         if (map.containsKey(requestPlayer.getUniqueId()) && map.get(requestPlayer.getUniqueId()).equals(receivePlayer.getUniqueId())) {
             map.remove(requestPlayer.getUniqueId());
-            send(requestPlayer, "&6Your %s request was denied!", type);
+            send(requestPlayer, "&6Your %s request to &6%s &cwas denied!", type, receivePlayer);
             send(receivePlayer, "&6Denied &c%s&6's %s request.", requestPlayer.getName(), type);
             return true;
         }
@@ -210,7 +208,7 @@ public record HandleExecutor(BrightsTPA plugin) {
             tpExecute(senderUUID, requestPlayer, "tpahere");
         }
         else {
-            send(requestPlayer, "&6You don't have any pending requests from &c%s!", receivePlayer.getName());
+            send(requestPlayer, "&6You don't have any pending requests from &c%s&6!", receivePlayer.getName());
         }
     }
 

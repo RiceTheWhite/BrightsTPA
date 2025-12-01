@@ -6,14 +6,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import static me.bright.BrightsTPA.BrightsTPA.LEGACY;
+import static me.bright.BrightsTPA.Format.String.send;
 
-public record CommandHandler(HandleExecutor plugin) implements CommandExecutor, me.bright.BrightsTPA.Format.String {
-
-    @Override
-    public void send(CommandSender sender, String msg, Object... args) {
-        sender.sendMessage(LEGACY.deserialize(String.format(msg, args)));
-    }
+public record CommandHandler(HandleExecutor plugin) implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {

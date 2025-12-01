@@ -1,19 +1,12 @@
 package me.bright.BrightsTPA;
 
 import me.bright.BrightsTPA.Format.tabComplete;
-import me.bright.BrightsTPA.PlayerEventListener.onPlayerMove;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Objects;
 
 public class BrightsTPA extends JavaPlugin {
     public static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
-
-    private int requestTimeout;
-    private int requestCooldown;
-    private int commandCooldown;
-    private int tpDelay;
-    private boolean cancelOnMove;
 
     @Override
     public void onEnable() {
@@ -26,7 +19,6 @@ public class BrightsTPA extends JavaPlugin {
         HandleExecutor logicHandler = new HandleExecutor(this);
         CommandHandler handler = new CommandHandler(logicHandler);
 
-        getServer().getPluginManager().registerEvents(new onPlayerMove(logicHandler), this);
         Objects.requireNonNull(getCommand("tpa")).setExecutor(handler);
         Objects.requireNonNull(getCommand("tpahere")).setExecutor(handler);
         Objects.requireNonNull(getCommand("tpaccept")).setExecutor(handler);
@@ -37,6 +29,12 @@ public class BrightsTPA extends JavaPlugin {
         Objects.requireNonNull(getCommand("brightstpa")).setExecutor(handler);
     }
 
+    public static int requestTimeout;
+    public static int requestCooldown;
+    public static int commandCooldown;
+    public static int tpDelay;
+    public static boolean cancelOnMove;
+
     public void loadSettings() {
         requestTimeout = getConfig().getInt("request-timeout", 0);
         requestCooldown = getConfig().getInt("request-cooldown", 0);
@@ -44,20 +42,19 @@ public class BrightsTPA extends JavaPlugin {
         tpDelay = getConfig().getInt("tp-delay", 0);
         cancelOnMove = getConfig().getBoolean("cancel-on-move", false);
     }
-
-    public int getRequestTimeout() {
+    public static int getRequestTimeout() {
         return requestTimeout;
     }
-    public int getRequestCooldown() {
+    public static int getRequestCooldown() {
         return requestCooldown;
     }
-    public int getCommandCooldown() {
+    public static int getCommandCooldown() {
         return commandCooldown;
     }
-    public int getTpDelay() {
+    public static int getTpDelay() {
         return tpDelay;
     }
-    public boolean getCancelOnMove() {
+    public static boolean getCancelOnMove() {
         return cancelOnMove;
     }
 }

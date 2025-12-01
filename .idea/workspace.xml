@@ -5,11 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5d396827-4912-498a-bb93-d7a1d22e74ed" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/me/bright/BrightsTPA/Format/tabComplete.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/me/bright/BrightsTPA/PlayerEventListener/onPlayerMove.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/me/bright/BrightsTPA/BrightsTPA.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/me/bright/BrightsTPA/BrightsTPA.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/me/bright/BrightsTPA/CommandHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/me/bright/BrightsTPA/CommandHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/me/bright/BrightsTPA/HandleExecutor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/me/bright/BrightsTPA/HandleExecutor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/plugin.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/plugin.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -16,6 +16,10 @@ public record HandleExecutor(BrightsTPA plugin) implements me.bright.BrightsTPA.
     private static final HashMap<UUID, Long> commandCooldownsMap = new HashMap<>();
     private static final HashMap<UUID, Long> requestCooldownMap = new HashMap<>();
     private static final HashMap<UUID, BukkitRunnable> timeoutTasksMap = new HashMap<>();
+    private static final HashMap<UUID, BukkitRunnable> teleportTasksMap = new HashMap<>();
+    public static HashMap<UUID, BukkitRunnable> getTeleportTasksMap() {
+        return teleportTasksMap;
+    }
 
     @Override
     public void send(CommandSender sender, String msg, Object... args) {
@@ -73,8 +77,11 @@ public record HandleExecutor(BrightsTPA plugin) implements me.bright.BrightsTPA.
     public void handleTpaDenyCommand(CommandSender sender, String[] args) {
         Player requestPlayer = (Player) sender;
 
-        if (getCommandCooldown(requestPlayer, plugin.getCommandCooldown(), "tpdeny") ||
-                !requestPlayer.hasPermission("brightstpa.deny")) {
+        if (getCommandCooldown(requestPlayer, plugin.getCommandCooldown(), "tpdeny")) {
+            return;
+        }
+
+        if (!requestPlayer.hasPermission("brightstpa.tpdeny")) {
             send(requestPlayer, "&cYou do not have permission to use this command!");
             return;
         }
@@ -151,8 +158,11 @@ public record HandleExecutor(BrightsTPA plugin) implements me.bright.BrightsTPA.
     public void handleTpaAcceptCommand(CommandSender sender, String[] args) {
         Player requestPlayer = (Player) sender;
 
-        if (getCommandCooldown(requestPlayer, plugin.getCommandCooldown(), "tpaccept") ||
-                !requestPlayer.hasPermission("brightstpa.accept")) {
+        if (getCommandCooldown(requestPlayer, plugin.getCommandCooldown(), "tpaccept")) {
+            return;
+        }
+
+        if (!requestPlayer.hasPermission("brightstpa.tpaccept")) {
             send(requestPlayer, "&cYou do not have permission to use this command!");
             return;
         }
@@ -228,11 +238,6 @@ public record HandleExecutor(BrightsTPA plugin) implements me.bright.BrightsTPA.
     private void sendTeleportRequest(CommandSender sender, String targetName, Map<UUID, UUID> map, String type, String message) {
         Player requestPlayer = (Player) sender;
 
-        if (getCommandCooldown(requestPlayer, plugin.getCommandCooldown(), type.toLowerCase()) ||
-            getRequestCooldown(requestPlayer, plugin.getRequestCooldown())) {
-            return;
-        }
-
         if (type.equals("TPA")) {
             if (!requestPlayer.hasPermission("brightstpa.tpa")) {
                 send(requestPlayer, "&cYou do not have permission to use this command!");
@@ -259,6 +264,11 @@ public record HandleExecutor(BrightsTPA plugin) implements me.bright.BrightsTPA.
 
         if (map.containsKey(requestPlayer.getUniqueId())) {
             send(requestPlayer, "&6You already have a pending request!");
+            return;
+        }
+
+        if (getCommandCooldown(requestPlayer, plugin.getCommandCooldown(), type.toLowerCase()) ||
+                getRequestCooldown(requestPlayer, plugin.getRequestCooldown())) {
             return;
         }
 
@@ -304,6 +314,47 @@ public record HandleExecutor(BrightsTPA plugin) implements me.bright.BrightsTPA.
         }
     }
 
+    public void handleTpaCancelCommand(CommandSender sender) {
+        Player requestPlayer = (Player) sender;
+
+        if (getCommandCooldown(requestPlayer, plugin.getCommandCooldown(), "tpacancel")) {
+            return;
+        }
+
+        if (!requestPlayer.hasPermission("brightstpa.tpacancel")) {
+            send(requestPlayer, "&cYou do not have permission to use this command!");
+            return;
+        }
+
+        if (!tpaMap.containsKey(requestPlayer.getUniqueId()) &&
+                !tpahereMap.containsKey(requestPlayer.getUniqueId())) {
+            send(requestPlayer, "&6You don't have any pending requests to cancel!");
+            return;
+        }
+
+        cancelTpaRequest(requestPlayer);
+    }
+
+    private void cancelTpaRequest(Player requestPlayer) {
+        UUID receiverUUID = tpaMap.remove(requestPlayer.getUniqueId());
+        String type = "TPA";
+
+        if (receiverUUID == null) {
+            receiverUUID = tpahereMap.remove(requestPlayer.getUniqueId());
+            type = "TPAHERE";
+        }
+
+        if (receiverUUID != null) {
+            cancelTimeout(requestPlayer.getUniqueId());
+            send(requestPlayer, "&6Cancelled all your %s requests.", type);
+
+            Player receiver = Bukkit.getPlayer(receiverUUID);
+            if (receiver != null && receiver.isOnline()) {
+                send(receiver, "&c%s &6cancelled their %s request.", requestPlayer.getName(), type);
+            }
+        }
+    }
+
     private void tpExecute(UUID senderUUID, Player receiver, String type) {
         Player sender = Bukkit.getPlayer(senderUUID);
 
@@ -320,16 +371,18 @@ public record HandleExecutor(BrightsTPA plugin) implements me.bright.BrightsTPA.
         if (isTpa) {
             send(receiver, "&6TPA request accepted! &c%s &6will teleport to you in &c%s seconds.", sender.getName(), delaySeconds);
             send(sender, "&6Request accepted! Teleporting in &c%s seconds.", delaySeconds);
-        } else {
+        }
+        else {
             send(sender, "&6TPAHERE request accepted! &c%s &6will teleport to you in &c%s seconds.", receiver.getName(), delaySeconds);
             send(receiver, "&6Request accepted! Teleporting in &c%s seconds.", delaySeconds);
         }
 
-        new BukkitRunnable() {
+        BukkitRunnable task = new BukkitRunnable() {
             @Override
             public void run() {
                 if (!sender.isOnline() || !receiver.isOnline()) {
-                    send(isTpa ? sender : receiver, "&cTeleport cancelled: player went offline.");
+                    send(isTpa ? sender : receiver, "&cTeleport cancelled, player went offline.");
+                    teleportTasksMap.remove(sender.getUniqueId());
                     return;
                 }
 
@@ -344,7 +397,11 @@ public record HandleExecutor(BrightsTPA plugin) implements me.bright.BrightsTPA.
                     send(receiver, "&6Teleported successfully!");
                     send(sender, "&6%s has arrived.", receiver.getName());
                 }
+
+                teleportTasksMap.remove(sender.getUniqueId());
             }
-        }.runTaskLater(plugin, delaySeconds * 20L);
+        };
+        task.runTaskLater(plugin, delaySeconds * 20L);
+        teleportTasksMap.put(sender.getUniqueId(), task);
     }
 }

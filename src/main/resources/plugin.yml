@@ -18,19 +18,19 @@ commands:
   tpdeny:
     description: Deny a TPA request
     aliases: [tpno]
+  tpacancel:
+    description: Cancel all requests
 
 permissions:
   brightstpa.reload:
     description: "Allows the use of the /brightstpa reload command"
-  brightstpa.deny:
-    description: "Allows the use of the /tpdeny command"
+  brightstpa.tpdeny:
     default: true
-  brightstpa.accept:
-    description: "Allows the use of the /tpaccept command"
+  brightstpa.tpaccept:
     default: true
   brightstpa.tpa:
-    description: "Allows the use of the /tpa command"
     default: true
   brightstpa.tpahere:
-    description: "Allows the use of the /tpa command"
+    default: true
+  brightstpa.tpacancel:
     default: true

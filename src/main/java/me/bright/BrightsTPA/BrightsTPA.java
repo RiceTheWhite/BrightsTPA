@@ -1,6 +1,7 @@
 package me.bright.BrightsTPA;
 
 import me.bright.BrightsTPA.Format.tabComplete;
+import me.bright.BrightsTPA.PlayerEventListener.onPlayerMove;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Objects;
@@ -19,16 +20,20 @@ public class BrightsTPA extends JavaPlugin {
         getLogger().info("Plugin Loaded!");
         saveDefaultConfig();
         loadSettings();
+        
         getServer().getPluginManager().registerEvents(new tabComplete(), this);
 
         HandleExecutor logicHandler = new HandleExecutor(this);
         CommandHandler handler = new CommandHandler(logicHandler);
+
+        getServer().getPluginManager().registerEvents(new onPlayerMove(logicHandler), this);
         Objects.requireNonNull(getCommand("tpa")).setExecutor(handler);
         Objects.requireNonNull(getCommand("tpahere")).setExecutor(handler);
         Objects.requireNonNull(getCommand("tpaccept")).setExecutor(handler);
         Objects.requireNonNull(getCommand("tpdeny")).setExecutor(handler);
         Objects.requireNonNull(getCommand("tpyes")).setExecutor(handler);
         Objects.requireNonNull(getCommand("tpno")).setExecutor(handler);
+        Objects.requireNonNull(getCommand("tpacancel")).setExecutor(handler);
         Objects.requireNonNull(getCommand("brightstpa")).setExecutor(handler);
     }
 

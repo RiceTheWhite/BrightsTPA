@@ -61,6 +61,15 @@ public record CommandHandler(HandleExecutor plugin) implements CommandExecutor, 
                 return true;
             }
 
+            case "tpacancel" -> {
+                if (!(sender instanceof Player)) {
+                    send(sender, "&cOnly players may use this command!");
+                    return true;
+                }
+                plugin.handleTpaCancelCommand(sender);
+                return true;
+            }
+
         }
         return false;
     }

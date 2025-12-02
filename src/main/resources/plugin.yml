@@ -30,6 +30,8 @@ permissions:
     default: op
   brightstpa.reload:
     default: op
+  brightstpa.version:
+    default: true
   brightstpa.tpdeny:
     default: true
   brightstpa.tpaccept:

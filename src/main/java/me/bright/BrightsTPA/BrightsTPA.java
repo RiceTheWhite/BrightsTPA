@@ -2,7 +2,12 @@ package me.bright.BrightsTPA;
 
 import me.bright.BrightsTPA.Format.tabComplete;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.util.Map;
 import java.util.Objects;
 
 public class BrightsTPA extends JavaPlugin {
@@ -13,7 +18,8 @@ public class BrightsTPA extends JavaPlugin {
         getLogger().info("Plugin Loaded!");
         saveDefaultConfig();
         loadSettings();
-        
+        loadLanguage();
+
         getServer().getPluginManager().registerEvents(new tabComplete(), this);
 
         HandleExecutor logicHandler = new HandleExecutor(this);
@@ -42,19 +48,29 @@ public class BrightsTPA extends JavaPlugin {
         tpDelay = getConfig().getInt("tp-delay", 0);
         cancelOnMove = getConfig().getBoolean("cancel-on-move", false);
     }
-    public static int getRequestTimeout() {
-        return requestTimeout;
+
+    public static int getRequestTimeout() {return requestTimeout;}
+    public static int getRequestCooldown() {return requestCooldown;}
+    public static int getCommandCooldown() {return commandCooldown;}
+    public static int getTpDelay() {return tpDelay;}
+    public static boolean getCancelOnMove() {return cancelOnMove;}
+
+    public FileConfiguration langConfig;
+
+    public void loadLanguage() {
+        File langFile = new File(getDataFolder(), "lang.yml");
+        if (!langFile.exists()) {
+            saveResource("lang.yml", false);
+        }
+        langConfig = YamlConfiguration.loadConfiguration(langFile);
     }
-    public static int getRequestCooldown() {
-        return requestCooldown;
-    }
-    public static int getCommandCooldown() {
-        return commandCooldown;
-    }
-    public static int getTpDelay() {
-        return tpDelay;
-    }
-    public static boolean getCancelOnMove() {
-        return cancelOnMove;
+    public String Message(String path, Map<String, String> replacements) {
+        String message = langConfig.getString(path, "Message not found: " + path);
+        if (replacements != null) {
+            for (Map.Entry<String, String> entry : replacements.entrySet()) {
+                message = message.replace(entry.getKey(), entry.getValue());
+            }
+        }
+        return message;
     }
 }

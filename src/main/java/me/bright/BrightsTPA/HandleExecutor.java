@@ -2,10 +2,8 @@ package me.bright.BrightsTPA;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -13,22 +11,26 @@ import static me.bright.BrightsTPA.Format.String.send;
 
 public record HandleExecutor(BrightsTPA plugin) {
 
-    public static final HashMap<UUID, UUID> tpaMap = new HashMap<>();
-    public static final HashMap<UUID, UUID> tpahereMap = new HashMap<>();
+    public static final HashMap<UUID, Map<UUID, Long>> tpaMap = new HashMap<>();
+    public static final HashMap<UUID, Map<UUID, Long>> tpahereMap = new HashMap<>();
     public static final HashMap<UUID, Long> commandCooldownsMap = new HashMap<>();
     public static final HashMap<UUID, Long> requestCooldownMap = new HashMap<>();
     public static final HashMap<UUID, BukkitRunnable> timeoutTasksMap = new HashMap<>();
     public static final HashMap<UUID, BukkitRunnable> teleportTasksMap = new HashMap<>();
+    public static final HashMap<String, String> placeholders = new HashMap<>();
 
-    public boolean getCommandCooldown(@NotNull Player player, long cooldownSeconds, String command) {
-        long currentTime = System.currentTimeMillis();
-        long cooldownMillis = cooldownSeconds * 1000L;
-        long lastUse = commandCooldownsMap.getOrDefault(player.getUniqueId(), 0L);
+    public boolean commandIsCooldown(Player player, long cooldownSeconds, String command) {
+        final long currentTime = System.currentTimeMillis();
+        final long cooldownMillis = cooldownSeconds * 1000L;
+        final long lastUse = commandCooldownsMap.getOrDefault(player.getUniqueId(), 0L);
 
         if (!player.hasPermission("brightstpa.bypass.cooldown.command")) {
             if (currentTime - lastUse < cooldownMillis) {
                 long remaining = (cooldownMillis - (currentTime - lastUse)) / 1000;
-                send(player, "&6You must wait &c%s second(s) &6before using &c/%s &6again.", remaining, command);
+                placeholders.clear();
+                placeholders.put("%time%", String.valueOf(remaining));
+                placeholders.put("%command%", command);
+                send(player, plugin.Message("messages.command_cooldown", placeholders));
                 return true;
             }
             commandCooldownsMap.put(player.getUniqueId(), currentTime);
@@ -37,15 +39,17 @@ public record HandleExecutor(BrightsTPA plugin) {
         return false;
     }
 
-    public boolean getRequestCooldown(@NotNull Player player, long cooldownSeconds) {
-        long currentTime = System.currentTimeMillis();
-        long cooldownMillis = cooldownSeconds * 1000L;
-        long lastUse = requestCooldownMap.getOrDefault(player.getUniqueId(), 0L);
+    public boolean requestIsCooldown(Player player, long cooldownSeconds) {
+        final long currentTime = System.currentTimeMillis();
+        final long cooldownMillis = cooldownSeconds * 1000L;
+        final long lastUse = requestCooldownMap.getOrDefault(player.getUniqueId(), 0L);
 
         if (!player.hasPermission("brightstpa.bypass.cooldown.request")) {
             if (currentTime - lastUse < cooldownMillis) {
                 long remaining = (cooldownMillis - (currentTime - lastUse)) / 1000;
-                send(player, "&6You must wait &c%s second(s) &6before sending another request &6again.", remaining);
+                placeholders.clear();
+                placeholders.put("%time%", String.valueOf(remaining));
+                send(player, plugin.Message("messages.request_cooldown", placeholders));
                 return true;
             }
             requestCooldownMap.put(player.getUniqueId(), currentTime);
@@ -54,252 +58,319 @@ public record HandleExecutor(BrightsTPA plugin) {
         return false;
     }
 
-    public void handleReloadCommand(@NotNull CommandSender sender, String[] args) {
-        if (!sender.hasPermission("brightstpa.reload")) {
-            send(sender, "&cYou do not have permission to use this command.");
+    public void handleVersionCommand(Player player) {
+        final String version = plugin.getDescription().getVersion();
+
+        if (!player.hasPermission("brightstpa.version")) {
+            send(player, plugin.Message("messages.no_permission", placeholders));
             return;
         }
-        if (args.length == 0 || !args[0].equalsIgnoreCase("reload")) {
+        placeholders.clear();
+        placeholders.put("%version%", version);
+        send(player, plugin.Message("messages.version", placeholders));
+    }
+
+    public void handleReloadCommand(Player player) {
+
+        if (!player.hasPermission("brightstpa.reload")) {
+            send(player, plugin.Message("messages.no_permission", placeholders));
             return;
         }
         try {
+            plugin.saveDefaultConfig();
             plugin.reloadConfig();
+            plugin.loadLanguage();
             plugin.loadSettings();
-            send(sender, "&6Configuration reloaded successfully!");
+            send(player, plugin.Message("messages.config_reloaded", placeholders));
         }
         catch (Exception e) {
             plugin.getLogger().severe("Failed to reload configuration: " + e.getMessage());
-            send(sender, "&cFailed to reload config! Check console for details.");
+            send(player, plugin.Message("messages.config_reloaded_failed", placeholders));
         }
     }
 
-    public void handleTpaDenyCommand(CommandSender sender, String[] args) {
-        Player requestPlayer = (Player) sender;
+    public void handleTpaDenyCommand(Player receivePlayer, String[] args) {
 
-        if (getCommandCooldown(requestPlayer, BrightsTPA.getCommandCooldown(), "tpdeny")) {
+        if (commandIsCooldown(receivePlayer, BrightsTPA.getCommandCooldown(), "tpdeny")) {
             return;
         }
-        if (!requestPlayer.hasPermission("brightstpa.tpdeny")) {
-            send(requestPlayer, "&cYou do not have permission to use this command!");
+        if (!receivePlayer.hasPermission("brightstpa.tpdeny")) {
+            send(receivePlayer, plugin.Message("messages.no_permission", placeholders));
             return;
         }
-        if (args.length == 0) {
-            denyAllRequests(requestPlayer);
+        if (args.length > 0) {
+            denySpecificRequest(receivePlayer, Bukkit.getPlayer(args[0]));
         }
         else {
-            denySpecificRequest(requestPlayer, args[0]);
+            denyAnyRequests(receivePlayer);
         }
     }
 
-    public void denyAllRequests(@NotNull Player requestPlayer) {
-        if (!tpaMap.containsValue(requestPlayer.getUniqueId()) &&
-                !tpahereMap.containsValue(requestPlayer.getUniqueId())) {
-            send(requestPlayer, "&6You don't have any pending requests!");
+    public void denyAnyRequests(Player receivePlayer) {
+        Player requestPlayer = getLastestRequestReceiver(tpaMap, receivePlayer);
+        if (requestPlayer == null) {
+            requestPlayer = getLastestRequestReceiver(tpahereMap, receivePlayer);
+        }
+        if (teleportTasksMap.containsKey(receivePlayer.getUniqueId())) {
+            send(receivePlayer, plugin.Message("messages.cant_do_that", placeholders));
             return;
         }
-        denyRequestsFromMap(tpaMap, requestPlayer, "TPA");
-        denyRequestsFromMap(tpahereMap, requestPlayer, "TPAHERE");
-        send(requestPlayer, "&6Denied all requests.");
-    }
-
-    public void denyRequestsFromMap(@NotNull Map<UUID, UUID> map, Player requestPlayer, String type) {
-        List<UUID> toRemove = new ArrayList<>();
-        for (Map.Entry<UUID, UUID> entry : map.entrySet()) {
-            if (entry.getValue().equals(requestPlayer.getUniqueId())) {
-                toRemove.add(entry.getKey());
-            }
-        }
-        for (UUID senderUUID : toRemove) {
-            cancelTimeout(senderUUID);
-            map.remove(senderUUID);
-            Player receivePlayer = Bukkit.getPlayer(senderUUID);
-            if (receivePlayer != null) send(receivePlayer, "&6Your %s request to &c%s &6was denied!", type, requestPlayer.getName());
-        }
-    }
-
-    public void denySpecificRequest(Player requestPlayer, String playerName) {
-        Player receivePlayer = Bukkit.getPlayer(playerName);
-        if (receivePlayer == null) {
-            send(requestPlayer, "&cPlayer not found!");
+        if (requestPlayer == null) {
+            send(receivePlayer, plugin.Message("messages.no_request", placeholders));
             return;
         }
-        if (receivePlayer.getUniqueId().equals(requestPlayer.getUniqueId())) {
-            send(requestPlayer, "&6You may not deny yourself!");
-            return;
-        }
-        cancelTimeout(receivePlayer.getUniqueId());
-        boolean foundRequest = removeRequest(tpaMap, receivePlayer, requestPlayer, "TPA");
-        foundRequest |= removeRequest(tpahereMap, receivePlayer, requestPlayer, "TPAHERE");
-
-        if (!foundRequest) {
-            send(requestPlayer, "&6You don't have any pending requests from &c%s&6!", receivePlayer.getName());
-        }
-    }
-
-    public boolean removeRequest(@NotNull Map<UUID, UUID> map, @NotNull Player requestPlayer, Player receivePlayer, String type) {
-        if (map.containsKey(requestPlayer.getUniqueId()) && map.get(requestPlayer.getUniqueId()).equals(receivePlayer.getUniqueId())) {
-            map.remove(requestPlayer.getUniqueId());
-            send(requestPlayer, "&6Your %s request to &c%s &6was denied!", type, receivePlayer.getName());
-            send(receivePlayer, "&6Denied &c%s&6's %s request.", requestPlayer.getName(), type);
-            return true;
-        }
-        return false;
-    }
-
-    public void handleTpaAcceptCommand(CommandSender sender, String[] args) {
-        Player requestPlayer = (Player) sender;
-
-        if (getCommandCooldown(requestPlayer, BrightsTPA.getCommandCooldown(), "tpaccept")) return;
-
-        if (!requestPlayer.hasPermission("brightstpa.tpaccept")) {
-            send(requestPlayer, "&cYou do not have permission to use this command!");
-            return;
-        }
-        if (args.length == 0) {
-            acceptAnyRequest(requestPlayer);
-        }
-        else {
-            acceptSpecificRequest(requestPlayer, args[0]);
-        }
-    }
-
-    public void acceptAnyRequest(@NotNull Player requestPlayer) {
         if (teleportTasksMap.containsKey(requestPlayer.getUniqueId())) {
-            send(requestPlayer, "&6You cannot accept requests while teleporting!");
+            send(receivePlayer, plugin.Message("messages.player_is_tping", placeholders));
             return;
         }
-        UUID senderUUID = findRequestSender(tpaMap, requestPlayer);
-        if (teleportTasksMap.containsKey(senderUUID)) {
-            send(requestPlayer, "&6That player is teleporting!");
-            return;
+        removeRequestTimeout(requestPlayer);
+
+        if (tpaMap.containsKey(requestPlayer.getUniqueId()) && tpaMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpDenyExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpa_type_prefix", placeholders));
         }
-        if (senderUUID != null) {
-            cancelTimeout(senderUUID);
-            tpExecute(senderUUID, requestPlayer, "tpa");
-            return;
+        else if (tpahereMap.containsKey(requestPlayer.getUniqueId()) && tpahereMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpDenyExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpahere_type_prefix", placeholders));
         }
-        senderUUID = findRequestSender(tpahereMap, requestPlayer);
-        if (senderUUID != null) {
-            cancelTimeout(senderUUID);
-            tpExecute(senderUUID, requestPlayer, "tpahere");
-            return;
-        }
-        send(requestPlayer, "&6You don't have any pending requests!");
     }
 
-    public void acceptSpecificRequest(@NotNull Player requestPlayer, String playerName) {
-        if (teleportTasksMap.containsKey(requestPlayer.getUniqueId())) {
-            send(requestPlayer, "&6You cannot accept requests while teleporting!");
-            return;
-        }
-        Player receivePlayer = Bukkit.getPlayer(playerName);
-        if (receivePlayer == null) {
-            send(requestPlayer, "&cPlayer not found!");
+    public void denySpecificRequest(Player receivePlayer, Player requestPlayer) {
+        if (requestPlayer == null) {
+            send(receivePlayer, plugin.Message("messages.no_player_found", placeholders));
             return;
         }
         if (teleportTasksMap.containsKey(receivePlayer.getUniqueId())) {
-            send(requestPlayer, "&6That player is teleporting!");
+            send(receivePlayer, plugin.Message("messages.cant_do_that", placeholders));
             return;
         }
-        if (receivePlayer.getUniqueId().equals(requestPlayer.getUniqueId())) {
-            send(requestPlayer, "&6You may not accept yourself!");
+        if (teleportTasksMap.containsKey(requestPlayer.getUniqueId())) {
+            send(receivePlayer, plugin.Message("messages.player_is_tping", placeholders));
             return;
         }
-        cancelTimeout(receivePlayer.getUniqueId());
-        UUID senderUUID = receivePlayer.getUniqueId();
+        if (requestPlayer.getUniqueId().equals(receivePlayer.getUniqueId())) {
+            send(receivePlayer, plugin.Message("messages.cant_do_that", placeholders));
+            return;
+        }
+        removeRequestTimeout(requestPlayer);
 
-        if (tpaMap.containsKey(senderUUID) && tpaMap.get(senderUUID).equals(requestPlayer.getUniqueId())) {
-            tpExecute(senderUUID, requestPlayer, "tpa");
+        if (tpaMap.containsKey(requestPlayer.getUniqueId()) && tpaMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpDenyExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpa_type_prefix", placeholders));
         }
-        else if (tpahereMap.containsKey(senderUUID) && tpahereMap.get(senderUUID).equals(requestPlayer.getUniqueId())) {
-            tpExecute(senderUUID, requestPlayer, "tpahere");
+        else if (tpahereMap.containsKey(requestPlayer.getUniqueId()) && tpahereMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpDenyExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpahere_type_prefix", placeholders));
         }
         else {
-            send(requestPlayer, "&6You don't have any pending requests from &c%s&6!", receivePlayer.getName());
+            placeholders.clear();
+            placeholders.put("%player%", requestPlayer.getName());
+            send(receivePlayer, plugin.Message("messages.no_request_from_player", placeholders));
         }
     }
 
-    public UUID findRequestSender(@NotNull Map<UUID, UUID> map, Player receiver) {
-        return map.entrySet().stream()
-            .filter(entry -> entry.getValue().equals(receiver.getUniqueId()))
-            .findFirst()
-            .map(Map.Entry::getKey)
-            .orElse(null);
-    }
-
-    public void handleTpaCommand(CommandSender sender, String @NotNull [] args) {
-        if (args.length == 0) return;
-        sendTeleportRequest(sender, args[0], tpaMap, "TPA", "wants tp to you");
-    }
-
-    public void handleTpahereCommand(CommandSender sender, String @NotNull [] args) {
-        if (args.length == 0) return;
-        sendTeleportRequest(sender, args[0], tpahereMap, "TPAHERE", "wants you tp to them");
-    }
-
-    public void sendTeleportRequest(CommandSender sender, String name, Map<UUID, UUID> map, @NotNull String type, String message) {
-        Player requestPlayer = (Player) sender;
-        if (type.equals("TPA")) {
-            if (!requestPlayer.hasPermission("brightstpa.tpa")) {
-                send(requestPlayer, "&cYou do not have permission to use this command!");
-                return;
+    public void tpDenyExecute(Player requestPlayer, Player receivePlayer, String type) {
+        Map<UUID, Long> tpaRequests = tpaMap.get(requestPlayer.getUniqueId());
+        if (tpaRequests != null) {
+            tpaRequests.remove(receivePlayer.getUniqueId());
+            if (tpaRequests.isEmpty()) {
+                tpaMap.remove(requestPlayer.getUniqueId());
             }
         }
-        else if (type.equals("TPAHERE")) {
+
+        Map<UUID, Long> tpahereRequests = tpahereMap.get(requestPlayer.getUniqueId());
+        if (tpahereRequests != null) {
+            tpahereRequests.remove(receivePlayer.getUniqueId());
+            if (tpahereRequests.isEmpty()) {
+                tpahereMap.remove(requestPlayer.getUniqueId());
+            }
+        }
+
+        Player tpedPlayer = type.equals(plugin.Message("messages.tpa_type_prefix", placeholders)) ? requestPlayer : receivePlayer;
+        Player toPlayer = type.equals(plugin.Message("messages.tpa_type_prefix", placeholders)) ? receivePlayer : requestPlayer;
+
+        placeholders.clear();
+        placeholders.put("%type%", type);
+        placeholders.put("%player%", tpedPlayer.getName());
+        send(toPlayer, plugin.Message("messages.denied_request_from_player", placeholders));
+        placeholders.clear();
+        placeholders.put("%type%", type);
+        placeholders.put("%player%", toPlayer.getName());
+        send(tpedPlayer, plugin.Message("messages.denied_request", placeholders));
+    }
+
+    public void handleTpaAcceptCommand(Player receivePlayer, String[] args) {
+
+        if (commandIsCooldown(receivePlayer, BrightsTPA.getCommandCooldown(), "tpaccept")) return;
+
+        if (!receivePlayer.hasPermission("brightstpa.tpaccept")) {
+            send(receivePlayer, plugin.Message("messages.no_permission", placeholders));
+            return;
+        }
+        if (args.length > 0) {
+            acceptSpecificRequest(receivePlayer, Bukkit.getPlayer(args[0]));
+        }
+        else {
+            acceptAnyRequest(receivePlayer);
+        }
+    }
+
+    public void acceptAnyRequest(Player receivePlayer) {
+        Player requestPlayer = getLastestRequestReceiver(tpaMap, receivePlayer);
+        if (requestPlayer == null) {
+            requestPlayer = getLastestRequestReceiver(tpahereMap, receivePlayer);
+        }
+        if (teleportTasksMap.containsKey(receivePlayer.getUniqueId())) {
+            send(receivePlayer, plugin.Message("messages.cant_do_that", placeholders));
+            return;
+        }
+        if (requestPlayer == null) {
+            send(receivePlayer, plugin.Message("messages.no_request", placeholders));
+            return;
+        }
+        if (teleportTasksMap.containsKey(requestPlayer.getUniqueId())) {
+            send(receivePlayer, plugin.Message("messages.player_is_tping", placeholders));
+            return;
+        }
+        removeRequestTimeout(requestPlayer);
+
+        if (tpaMap.containsKey(requestPlayer.getUniqueId()) && tpaMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpacceptExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpa_type_prefix", placeholders));
+        }
+        else if (tpahereMap.containsKey(requestPlayer.getUniqueId()) && tpahereMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpacceptExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpahere_type_prefix", placeholders));
+        }
+    }
+
+    public void acceptSpecificRequest(Player receivePlayer, Player requestPlayer) {
+        if (teleportTasksMap.containsKey(receivePlayer.getUniqueId())) {
+            send(receivePlayer, plugin.Message("messages.cant_do_that", placeholders));
+            return;
+        }
+        if (requestPlayer == null) {
+            send(receivePlayer, plugin.Message("messages.no_player_found", placeholders));
+            return;
+        }
+        if (teleportTasksMap.containsKey(requestPlayer.getUniqueId())) {
+            send(receivePlayer, plugin.Message("messages.player_is_tping", placeholders));
+            return;
+        }
+        if (requestPlayer.getUniqueId().equals(receivePlayer.getUniqueId())) {
+            send(receivePlayer, plugin.Message("messages.cant_do_that", placeholders));
+            return;
+        }
+        removeRequestTimeout(requestPlayer);
+
+        if (tpaMap.containsKey(requestPlayer.getUniqueId()) && tpaMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpacceptExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpa_type_prefix", placeholders));
+        }
+        else if (tpahereMap.containsKey(requestPlayer.getUniqueId()) && tpahereMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpacceptExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpahere_type_prefix", placeholders));
+        }
+        else {
+            placeholders.clear();
+            placeholders.put("%player%", requestPlayer.getName());
+            send(receivePlayer, plugin.Message("messages.no_request_from_player", placeholders));
+        }
+    }
+
+    public Player getLastestRequestReceiver(HashMap<UUID, Map<UUID, Long>> map, Player receivePlayer) {
+        UUID requestPlayerUUID = map.entrySet().stream()
+                .filter(entry -> entry.getValue().containsKey(receivePlayer.getUniqueId()))
+                .findFirst()
+                .map(Map.Entry::getKey)
+                .orElse(null);
+
+        return requestPlayerUUID != null ? Bukkit.getPlayer(requestPlayerUUID) : null;
+    }
+
+    public void handleTpaCommand(Player requestPlayer, String [] args) {
+        if (args.length > 0) {
+            sendTeleportRequest(requestPlayer, Bukkit.getPlayer(args[0]), tpaMap, plugin.Message("messages.tpa_type_prefix", placeholders));
+        }
+    }
+
+    public void handleTpahereCommand(Player requestPlayer, String [] args) {
+        if (args.length > 0) {
+            sendTeleportRequest(requestPlayer, Bukkit.getPlayer(args[0]), tpahereMap, plugin.Message("messages.tpahere_type_prefix", placeholders));
+        }
+    }
+
+    public void sendTeleportRequest(Player requestPlayer, Player receivePlayer, HashMap<UUID, Map<UUID, Long>> map, String type) {
+        final int timeoutSecond = BrightsTPA.getRequestTimeout();
+
+        if (type.equals(plugin.Message("messages.tpa_type_prefix", placeholders))) {
+            if (!requestPlayer.hasPermission("brightstpa.tpa")) {
+                send(requestPlayer, plugin.Message("messages.no_permission", placeholders));
+                return;
+            }
+        } else if (type.equals(plugin.Message("messages.tpahere_type_prefix", placeholders))) {
             if (!requestPlayer.hasPermission("brightstpa.tpahere")) {
-                send(requestPlayer, "&cYou do not have permission to use this command!");
+                send(requestPlayer, plugin.Message("messages.no_permission", placeholders));
                 return;
             }
         }
         if (teleportTasksMap.containsKey(requestPlayer.getUniqueId())) {
-            send(requestPlayer, "&6You cannot send requests while teleporting!");
+            send(requestPlayer, plugin.Message("messages.no_request_while_tping", placeholders));
             return;
         }
-        Player receivePlayer = Bukkit.getPlayer(name);
         if (receivePlayer == null) {
-            send(requestPlayer, "&cPlayer is not online!");
+            send(requestPlayer, plugin.Message("messages.player_not_online", placeholders));
             return;
         }
         if (receivePlayer.getUniqueId().equals(requestPlayer.getUniqueId())) {
-            send(requestPlayer, "&6You may not teleport to yourself!");
+            send(requestPlayer, plugin.Message("messages.cant_do_that", placeholders));
             return;
         }
-        if (tpaMap.containsKey(requestPlayer.getUniqueId()) && tpaMap.get(requestPlayer.getUniqueId()).equals(receivePlayer.getUniqueId()) || tpahereMap.containsKey(requestPlayer.getUniqueId()) && tpahereMap.get(requestPlayer.getUniqueId()).equals(receivePlayer.getUniqueId())) {
-            send(requestPlayer, "&6You already have a pending request to %s!", receivePlayer.getName());
+
+        Map<UUID, Long> requests = map.get(requestPlayer.getUniqueId());
+        if (requests != null && requests.containsKey(receivePlayer.getUniqueId())) {
+            placeholders.clear();
+            placeholders.put("%player%", receivePlayer.getName());
+            send(requestPlayer, plugin.Message("messages.already_request", placeholders));
             return;
         }
-        if (getCommandCooldown(requestPlayer, BrightsTPA.getCommandCooldown(), type.toLowerCase()) || getRequestCooldown(requestPlayer, BrightsTPA.getRequestCooldown())) return;
 
-        int timeoutSecond = BrightsTPA.getRequestTimeout();
-        map.put(requestPlayer.getUniqueId(), receivePlayer.getUniqueId());
+        if (commandIsCooldown(requestPlayer, BrightsTPA.getCommandCooldown(), type.toLowerCase()) || requestIsCooldown(requestPlayer, BrightsTPA.getRequestCooldown())) {
+            return;
+        }
 
-        send(requestPlayer, """
-                        &6Sent %s request to &c%s.
-                        &6Type &c/tpacancel &6to cancel.
-                        """,
-                        type, receivePlayer.getName());
-        send(receivePlayer, """
-                        &c%s &6%s.
-                        &6Type &c/tpaccept &6to accept.
-                        &6Type &c/tpdeny &6to deny.
-                        &6You have &c%s second(s) &6to respond.
-                        """,
-                        requestPlayer.getName(), message, timeoutSecond);
+        map.computeIfAbsent(requestPlayer.getUniqueId(), k -> new HashMap<>()).put(receivePlayer.getUniqueId(), System.currentTimeMillis());
 
-        scheduleTimeout(requestPlayer, map, type, timeoutSecond * 20L);
+        placeholders.clear();
+        placeholders.put("%player%", receivePlayer.getName());
+        placeholders.put("%type%", type);
+        send(requestPlayer, plugin.Message("messages.send_request", placeholders));
+        placeholders.clear();
+        placeholders.put("%player%", requestPlayer.getName());
+        placeholders.put("%time%", String.valueOf(timeoutSecond));
+        if (type.equals(plugin.Message("messages.tpa_type_prefix", placeholders))) {
+            send(receivePlayer, plugin.Message("messages.tpa_message", placeholders));
+        }
+        else if (type.equals(plugin.Message("messages.tpahere_type_prefix", placeholders))) {
+            send(receivePlayer, plugin.Message("messages.tpahere_message", placeholders));
+        }
+        setRequestTimeout(requestPlayer, receivePlayer, map, type, timeoutSecond * 20L);
     }
 
-    public void scheduleTimeout(@NotNull Player requestPlayer, Map<UUID, UUID> map, String type, long ticks) {
+    public void setRequestTimeout(Player requestPlayer, Player receivePlayer, HashMap<UUID, Map<UUID, Long>> map, String type, long ticks) {
         BukkitRunnable task = new BukkitRunnable() {
             @Override
             public void run() {
-                UUID receiverUUID = map.remove(requestPlayer.getUniqueId());
-                if (receiverUUID != null) {
-                    Player receiver = Bukkit.getPlayer(receiverUUID);
-                    String receiverName = (receiver != null && receiver.isOnline()) ? receiver.getName() : "a player";
-                    send(requestPlayer, "&6Your %s request to &c%s &6has timed out.", type, receiverName);
+                Map<UUID, Long> requests = map.get(requestPlayer.getUniqueId());
+                if (requests != null) {
+                    requests.remove(receivePlayer.getUniqueId());
+                    if (requests.isEmpty()) {
+                        map.remove(requestPlayer.getUniqueId());
+                    }
+
+                    Player receiver = Bukkit.getPlayer(receivePlayer.getUniqueId());
+                    placeholders.clear();
+                    placeholders.put("%player%", receivePlayer.getName());
+                    placeholders.put("%type%", type);
+                    send(requestPlayer, plugin.Message("messages.request_timeout_from_player", placeholders));
+
                     if (receiver != null && receiver.isOnline()) {
-                        send(receiver, "&c%s&6's %s request has timed out.", requestPlayer.getName(), type);
+                        placeholders.clear();
+                        placeholders.put("%player%", requestPlayer.getName());
+                        placeholders.put("%type%", type);
+                        send(receiver, plugin.Message("messages.request_timeout", placeholders));
                     }
                 }
                 timeoutTasksMap.remove(requestPlayer.getUniqueId());
@@ -309,120 +380,225 @@ public record HandleExecutor(BrightsTPA plugin) {
         timeoutTasksMap.put(requestPlayer.getUniqueId(), task);
     }
 
-    public void cancelTimeout(UUID playerUUID) {
-        BukkitRunnable task = timeoutTasksMap.remove(playerUUID);
+    public void removeRequestTimeout(Player requestPlayer) {
+        BukkitRunnable task = timeoutTasksMap.remove(requestPlayer.getUniqueId());
         if (task != null) {
             task.cancel();
         }
     }
 
-    public static void cancelTp(Player player) {
-        send(player,"&cTeleport cancelled, you moved!");
-        teleportTasksMap.remove(player.getUniqueId());
-        tpaMap.remove(player.getUniqueId());
-        tpahereMap.remove(player.getUniqueId());
-    }
-    
-    public void handleTpaCancelCommand(CommandSender sender) {
-        Player requestPlayer = (Player) sender;
+    public void cancelTpOnMove(Player tpedPlayer, Player toPlayer, Player requestPlayer) {
+        send(tpedPlayer, plugin.Message("messages.tp_cancelled_move_from_player", placeholders));
+        placeholders.clear();
+        placeholders.put("%player%", tpedPlayer.getName());
+        send(toPlayer, plugin.Message("messages.tp_cancelled_move", placeholders));
 
-        if (getCommandCooldown(requestPlayer, BrightsTPA.getCommandCooldown(), "tpacancel")) {
+        Map<UUID, Long> tpaRequests = tpaMap.get(requestPlayer.getUniqueId());
+        if (tpaRequests != null) {
+            tpaRequests.remove(toPlayer.getUniqueId());
+            if (tpaRequests.isEmpty()) {
+                tpaMap.remove(requestPlayer.getUniqueId());
+            }
+        }
+
+        Map<UUID, Long> tpahereRequests = tpahereMap.get(requestPlayer.getUniqueId());
+        if (tpahereRequests != null) {
+            tpahereRequests.remove(toPlayer.getUniqueId());
+            if (tpahereRequests.isEmpty()) {
+                tpahereMap.remove(requestPlayer.getUniqueId());
+            }
+        }
+
+        teleportTasksMap.remove(tpedPlayer.getUniqueId());
+    }
+
+    public void handleTpaCancelCommand(Player requestPlayer, String[] args) {
+
+        if (commandIsCooldown(requestPlayer, BrightsTPA.getCommandCooldown(), "tpacancel")) {
             return;
         }
         if (!requestPlayer.hasPermission("brightstpa.tpacancel")) {
-            send(requestPlayer, "&cYou do not have permission to use this command!");
+            send(requestPlayer, plugin.Message("messages.no_permission", placeholders));
             return;
         }
-        if (!tpaMap.containsKey(requestPlayer.getUniqueId()) &&
-            !tpahereMap.containsKey(requestPlayer.getUniqueId())) {
-            send(requestPlayer, "&6You don't have any pending requests to cancel!");
-            return;
+        if (args.length > 0) {
+            cancelSpecificRequest(requestPlayer, Bukkit.getPlayer(args[0]));
         }
-        cancelTpaRequest(requestPlayer);
-    }
-
-    public void cancelTpaRequest(@NotNull Player requestPlayer) {
-        UUID receiverUUID = tpaMap.remove(requestPlayer.getUniqueId());
-        String type = "TPA";
-
-        if (receiverUUID == null) {
-            receiverUUID = tpahereMap.remove(requestPlayer.getUniqueId());
-            type = "TPAHERE";
-        }
-        if (receiverUUID != null) {
-            cancelTimeout(requestPlayer.getUniqueId());
-            send(requestPlayer, "&6Cancelled all your %s requests.", type);
-
-            Player receiver = Bukkit.getPlayer(receiverUUID);
-            if (receiver != null && receiver.isOnline()) {
-                send(receiver, "&c%s &6cancelled their %s request.", requestPlayer.getName(), type);
-            }
+        else {
+            cancelAnyRequest(requestPlayer);
         }
     }
 
-    public void tpExecute(UUID requestPlayerUUID, Player receivePlayer, String type) {
-        Player requestPlayer = Bukkit.getPlayer(requestPlayerUUID);
-        int delaySeconds = BrightsTPA.getTpDelay();
-
-        if (requestPlayer == null || !requestPlayer.isOnline()) {
-            tpaMap.remove(requestPlayerUUID);
-            tpahereMap.remove(requestPlayerUUID);
-            send(receivePlayer, "&cThe player is no longer online.");
+    public void cancelSpecificRequest(Player requestPlayer, Player receivePlayer) {
+        if (teleportTasksMap.containsKey(requestPlayer.getUniqueId())) {
+            send(requestPlayer, plugin.Message("messages.cant_do_that", placeholders));
             return;
         }
-        if (type.equals("tpa")) {
-            if (!requestPlayer.hasPermission("brightstpa.bypass.tpdelay")) {
-                send(receivePlayer, "&6TPA request accepted! &c%s &6will teleport to you in &c%s seconds.", requestPlayer.getName(), delaySeconds);
-                send(requestPlayer, "&6Request accepted! Teleporting in &c%s seconds.", delaySeconds);
+        if (receivePlayer == null) {
+            send(requestPlayer, plugin.Message("messages.no_player_found", placeholders));
+            return;
+        }
+        if (teleportTasksMap.containsKey(receivePlayer.getUniqueId())) {
+            send(requestPlayer, plugin.Message("messages.player_is_tping", placeholders));
+            return;
+        }
+        if (requestPlayer.getUniqueId().equals(receivePlayer.getUniqueId())) {
+            send(requestPlayer, plugin.Message("messages.cant_do_that", placeholders));
+            return;
+        }
+        removeRequestTimeout(requestPlayer);
+
+        if (tpaMap.containsKey(requestPlayer.getUniqueId()) && tpaMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpacancelExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpa_type_prefix", placeholders));
+        }
+        else if (tpahereMap.containsKey(requestPlayer.getUniqueId()) && tpahereMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpacancelExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpahere_type_prefix", placeholders));
+        }
+        else {
+            placeholders.clear();
+            placeholders.put("%player%", receivePlayer.getName());
+            send(requestPlayer, plugin.Message("messages.no_request_to_player", placeholders));
+        }
+    }
+
+    public void cancelAnyRequest(Player requestPlayer) {
+        Player receivePlayer = null;
+
+        Map<UUID, Long> tpaRequests = tpaMap.get(requestPlayer.getUniqueId());
+        if (tpaRequests != null && !tpaRequests.isEmpty()) {
+            UUID firstReceiver = tpaRequests.keySet().iterator().next();
+            receivePlayer = Bukkit.getPlayer(firstReceiver);
+        }
+
+        if (receivePlayer == null) {
+            Map<UUID, Long> tpahereRequests = tpahereMap.get(requestPlayer.getUniqueId());
+            if (tpahereRequests != null && !tpahereRequests.isEmpty()) {
+                UUID firstReceiver = tpahereRequests.keySet().iterator().next();
+                receivePlayer = Bukkit.getPlayer(firstReceiver);
             }
         }
-        else if (type.equals("tpahere")) {
-            if (!requestPlayer.hasPermission("brightstpa.bypass.tpdelay")) {
-                send(requestPlayer, "&6TPAHERE request accepted! &c%s &6will teleport to you in &c%s seconds.", receivePlayer.getName(), delaySeconds);
-                send(receivePlayer, "&6Request accepted! Teleporting in &c%s seconds.", delaySeconds);
-                }
+
+        if (receivePlayer == null) {
+            send(requestPlayer, plugin.Message("messages.no_request", placeholders));
+            return;
+        }
+        if (teleportTasksMap.containsKey(requestPlayer.getUniqueId())) {
+            send(requestPlayer, plugin.Message("messages.cant_do_that", placeholders));
+            return;
+        }
+        if (teleportTasksMap.containsKey(receivePlayer.getUniqueId())) {
+            send(requestPlayer, plugin.Message("messages.player_is_tping", placeholders));
+            return;
+        }
+        removeRequestTimeout(requestPlayer);
+
+        if (tpaMap.containsKey(requestPlayer.getUniqueId()) && tpaMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpacancelExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpa_type_prefix", placeholders));
+        }
+        else if (tpahereMap.containsKey(requestPlayer.getUniqueId()) && tpahereMap.get(requestPlayer.getUniqueId()).containsKey(receivePlayer.getUniqueId())) {
+            tpacancelExecute(requestPlayer, receivePlayer, plugin.Message("messages.tpahere_type_prefix", placeholders));
+        }
+    }
+
+    public void tpacancelExecute(Player requestPlayer, Player receivePlayer, String type) {
+        Map<UUID, Long> tpaRequests = tpaMap.get(requestPlayer.getUniqueId());
+        if (tpaRequests != null) {
+            tpaRequests.remove(receivePlayer.getUniqueId());
+            if (tpaRequests.isEmpty()) {
+                tpaMap.remove(requestPlayer.getUniqueId());
+            }
+        }
+
+        Map<UUID, Long> tpahereRequests = tpahereMap.get(requestPlayer.getUniqueId());
+        if (tpahereRequests != null) {
+            tpahereRequests.remove(receivePlayer.getUniqueId());
+            if (tpahereRequests.isEmpty()) {
+                tpahereMap.remove(requestPlayer.getUniqueId());
+            }
+        }
+
+        placeholders.clear();
+        placeholders.put("%type%", type);
+        placeholders.put("%player%", receivePlayer.getName());
+        send(requestPlayer, plugin.Message("messages.cancel_request_to_player", placeholders));
+        placeholders.clear();
+        placeholders.put("%type%", type);
+        placeholders.put("%player%", requestPlayer.getName());
+        send(receivePlayer, plugin.Message("messages.cancel_request", placeholders));
+    }
+
+    public void tpacceptExecute(Player requestPlayer, Player receivePlayer, String type) {
+        final int delaySeconds = BrightsTPA.getTpDelay();
+        final Player tpedPlayer = type.equals(plugin.Message("messages.tpa_type_prefix", placeholders)) ? requestPlayer : receivePlayer;
+        final Player toPlayer = type.equals(plugin.Message("messages.tpa_type_prefix", placeholders)) ? receivePlayer : requestPlayer;
+        final boolean isCancelOnMove = BrightsTPA.getCancelOnMove();
+        final Location startLocation = tpedPlayer.getLocation();
+        if (!tpedPlayer.hasPermission("brightstpa.bypass.tpdelay")) {
+            placeholders.clear();
+            placeholders.put("%time%", String.valueOf(delaySeconds));
+            placeholders.put("%type%", type);
+            placeholders.put("%player%", toPlayer.getName());
+            send(tpedPlayer, plugin.Message("messages.request_accept_from_player", placeholders));
+            placeholders.clear();
+            placeholders.put("%time%", String.valueOf(delaySeconds));
+            placeholders.put("%type%", type);
+            placeholders.put("%player%", tpedPlayer.getName());
+            send(toPlayer, plugin.Message("messages.request_accept", placeholders));
         }
         BukkitRunnable task = new BukkitRunnable() {
-            final boolean isCancelOnMove = BrightsTPA.getCancelOnMove();
-            final Location startLocation = type.equals("tpa") ? requestPlayer.getLocation() : receivePlayer.getLocation();
             int elapsed = 0;
-
             @Override
             public void run() {
-                if (!requestPlayer.hasPermission("brightstpa.bypass.tpdelay")) {
+                if (!tpedPlayer.hasPermission("brightstpa.bypass.tpdelay")) {
                     elapsed += 1;
                 }
                 else {
                     elapsed += delaySeconds * 20;
                 }
-                org.bukkit.Location currentLocation = type.equals("tpa") ? requestPlayer.getLocation() : receivePlayer.getLocation();
-                Player player = type.equals("tpa") ? requestPlayer : receivePlayer;
+                Location currentLocation = tpedPlayer.getLocation();
                 if (elapsed >= delaySeconds * 20) {
-                    if (!requestPlayer.isOnline() || !receivePlayer.isOnline()) {
-                        send(player, "&cTeleport cancelled, player went offline.");
-                        tpaMap.remove(requestPlayerUUID);
-                        tpahereMap.remove(requestPlayerUUID);
-                    } else {
-                        if (type.equals("tpa")) {
-                            requestPlayer.teleport(receivePlayer.getLocation());
-                            tpaMap.remove(requestPlayerUUID);
-                            send(requestPlayer, "&6Teleported successfully!");
-                            send(receivePlayer, "&6%s has arrived.", requestPlayer.getName());
-                        } else if (type.equals("tpahere")) {
-                            receivePlayer.teleport(requestPlayer.getLocation());
-                            tpahereMap.remove(requestPlayerUUID);
-                            send(receivePlayer, "&6Teleported successfully!");
-                            send(requestPlayer, "&6%s has arrived.", receivePlayer.getName());
-                        }
-                    }
-                    teleportTasksMap.remove((type.equals("tpahere")) ? receivePlayer.getUniqueId() : requestPlayer.getUniqueId());cancel();
+                    tpExecute(tpedPlayer, toPlayer, requestPlayer);
+                    cancel();
                 }
                 else if (!currentLocation.getBlock().equals(startLocation.getBlock()) && isCancelOnMove) {
-                    cancelTp(player);cancel();
+                    cancelTpOnMove(tpedPlayer, toPlayer, requestPlayer);
+                    cancel();
                 }
             }
         };
         task.runTaskTimer(plugin, 0L, 1L);
-        teleportTasksMap.put((type.equals("tpahere")) ? receivePlayer.getUniqueId() : requestPlayer.getUniqueId(), task);
+        teleportTasksMap.put(tpedPlayer.getUniqueId(), task);
+    }
+
+    public void tpExecute(Player tpedPlayer, Player toPlayer, Player requestPlayer) {
+        if (!tpedPlayer.isOnline() || !toPlayer.isOnline()) {
+            send(toPlayer, plugin.Message("messages.player_not_online", placeholders));
+            send(tpedPlayer, plugin.Message("messages.player_not_online", placeholders));
+        }
+        else {
+            tpedPlayer.teleport(toPlayer.getLocation());
+            send(tpedPlayer, plugin.Message("messages.tp_success_from_player", placeholders));
+            placeholders.clear();
+            placeholders.put("%player%", tpedPlayer.getName());
+            send(toPlayer, plugin.Message("messages.tp_success", placeholders));
+        }
+
+        Map<UUID, Long> tpaRequests = tpaMap.get(requestPlayer.getUniqueId());
+        if (tpaRequests != null) {
+            tpaRequests.remove(toPlayer.getUniqueId());
+            if (tpaRequests.isEmpty()) {
+                tpaMap.remove(requestPlayer.getUniqueId());
+            }
+        }
+
+        Map<UUID, Long> tpahereRequests = tpahereMap.get(requestPlayer.getUniqueId());
+        if (tpahereRequests != null) {
+            tpahereRequests.remove(toPlayer.getUniqueId());
+            if (tpahereRequests.isEmpty()) {
+                tpahereMap.remove(requestPlayer.getUniqueId());
+            }
+        }
+
+        teleportTasksMap.remove(tpedPlayer.getUniqueId());
     }
 }

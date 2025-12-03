@@ -1,0 +1,44 @@
+main: ${group}.${name}.${name}
+api-version: ${apiVersion}
+
+name: ${name}
+version: ${version}
+author: ${author}
+
+commands:
+  brightstpa:
+    description: Reload the config
+  tpa:
+    description: TPA to a player
+  tpahere:
+    description: TPA a player to you
+  tpaccept:
+    description: Accept a TPA request
+    aliases: [tpyes]
+  tpdeny:
+    description: Deny a TPA request
+    aliases: [tpno]
+  tpacancel:
+    description: Cancel all requests
+
+permissions:
+  brightstpa.bypass.tpdelay:
+    default: op
+  brightstpa.bypass.cooldown.command:
+    default: op
+  brightstpa.bypass.cooldown.request:
+    default: op
+  brightstpa.reload:
+    default: op
+  brightstpa.version:
+    default: true
+  brightstpa.tpdeny:
+    default: true
+  brightstpa.tpaccept:
+    default: true
+  brightstpa.tpa:
+    default: true
+  brightstpa.tpahere:
+    default: true
+  brightstpa.tpacancel:
+    default: true

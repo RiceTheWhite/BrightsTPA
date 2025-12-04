@@ -1,3 +1,4 @@
+# Use %% for placeholderapi if you want (ex: %%player_name%%)
 messages:
   tpa_type_prefix: "TPA"
   tpahere_type_prefix: "TPAHERE"

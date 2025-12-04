@@ -5,6 +5,8 @@ name: ${name}
 version: ${version}
 author: ${author}
 
+softdepend: [PlaceholderAPI]
+
 commands:
   brightstpa:
     description: Reload the config

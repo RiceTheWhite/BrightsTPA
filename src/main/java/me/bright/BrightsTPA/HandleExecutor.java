@@ -157,7 +157,7 @@ public record HandleExecutor(BrightsTPA plugin) {
     }
 
     public void handleVersionCommand(Player player) {
-        final String version = plugin.getDescription().getVersion();
+        final String version = plugin.getPluginMeta().getVersion();
 
         if (!player.hasPermission("brightstpa.version")) {
             send(player, plugin.Message("messages.no_permission", placeholders));

@@ -1,5 +1,0 @@
-request-timeout: 30
-request-cooldown: 30
-command-cooldown: 5
-tp-delay: 5
-cancel-on-move: true
